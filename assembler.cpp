@@ -87,14 +87,50 @@ void perform_instruction(pair<string,string> instruction , vector<int> &reg , ve
         else if(instruction.first == "jal") jal(imm,labels,pc, reg[regtoindex[dest]]);
     }
 }
+
+void map_reg(unordered_map<string,int>& regtoindex , vector<string> reg_name){
+    for(int i = 0 ; i < 32 ; i++){
+       regtoindex[reg_name[i]] = i;
+    }
+    regtoindex["zero"] = 0;
+    regtoindex["ra"] = 1;
+    regtoindex["sp"] = 2;
+    regtoindex["gp"] = 3;
+    regtoindex["tp"] = 4;
+    regtoindex["t0"] = 5;
+    regtoindex["t1"] = 6;
+    regtoindex["t2"] = 7;
+    regtoindex["s0"] = 8;
+    regtoindex["s1"] = 9;
+    regtoindex["a0"] = 10;
+    regtoindex["a1"] = 11;
+    regtoindex["a2"] = 12;
+    regtoindex["a3"] = 13;
+    regtoindex["a4"] = 14;
+    regtoindex["a5"] = 15;
+    regtoindex["a6"] = 16;
+    regtoindex["a7"] = 17;
+    regtoindex["s2"] = 18;
+    regtoindex["s3"] = 19;
+    regtoindex["s4"] = 20;
+    regtoindex["s5"] = 21;
+    regtoindex["s6"] = 22;
+    regtoindex["s7"] = 23;
+    regtoindex["s8"] = 24;
+    regtoindex["s9"] = 25;
+    regtoindex["s10"] = 26;
+    regtoindex["s11"] = 27;
+    regtoindex["t3"] = 28;
+    regtoindex["t4"] = 29;
+    regtoindex["t5"] = 30;
+    regtoindex["t6"] = 31;
+    
+}
 void assembeler(vector<int>& reg , vector<int>& mem , vector<pair<string,string>> &instructions, vector<string>& reg_name){
     unordered_map<string, int> regtoindex;
     unordered_map<string,int> labels;
     int pc  = 0;
-    for(int i = 0 ; i < 32 ; i++){
-       regtoindex[reg_name[i]] = i;
-    }
-    
+    map_reg(regtoindex,reg_name);
     get_instructions(instructions);
     for(int i = 0 ; i < instructions.size() ; i++){
         string label = instructions[i].first;
