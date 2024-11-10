@@ -48,6 +48,75 @@ void lw(int &dest, int &base, int offset, vector<int> &mem) {
     }
 }
 
+void lhu(int &dest, int &base, int offset, vector<int> &mem) {
+    int address = base + offset;
+    int mem_index = address / 2;         
+    int h_offset = address % 2;   
+
+    if (mem_index >= 0 && mem_index < mem.size()) {
+        int h = mem[mem_index];
+        if (h_offset == 0) {
+            dest = h & 0xFFFF;     
+        } else {
+            dest = (h >> 16) & 0xFFFF; 
+        }
+    } else {
+        cerr << "Memory access error at address: " << address << endl;
+    }
+}
+
+void lh(int &dest, int &base, int offset, vector<int> &mem) {
+    int address = base + offset;
+    int mem_index = address / 2;        
+    int h_offset = address % 2;  
+
+    if (mem_index >= 0 && mem_index < mem.size()) {
+        int word = mem[mem_index];
+        int halfword;
+
+        if (h_offset == 0) {
+            halfword = word & 0xFFFF;  
+        } else {
+            halfword = (word >> 16) & 0xFFFF; 
+        }
+        if (halfword & 0x8000) {  
+            halfword |= 0xFFFF0000;  
+        }
+
+        dest = halfword;
+    } else {
+        cerr << "Memory access error at address: " << address << endl;
+    }
+}
+
+void lbu(int &dest, int &base, int offset, vector<int> &mem) {
+    int address = base + offset;
+    int mem_index = address / 4;        
+    int b_offset = address % 4;       
+    if (mem_index >= 0 && mem_index < mem.size()) {
+        int b = mem[mem_index];
+        dest = (b >> (b_offset * 8)) & 0xFF; 
+    } else {
+        cerr << "Memory access error at address: " << address << endl;
+    }
+}
+void lb(int &dest, int &base, int offset, vector<int> &mem) {
+    int address = base + offset;
+    int mem_index = address / 4;         
+    int b_offset = address % 4;     
+    if (mem_index >= 0 && mem_index < mem.size()) {
+        int word = mem[mem_index];
+        int b = (word >> (b_offset * 8)) & 0xFF;
+        if (b & 0x80) { 
+            b |= 0xFFFFFF00; 
+        }
+
+        dest = byte;
+    } else {
+        cerr << "Memory access error at address: " << address << endl;
+    }
+}
+
 void jal(string label, unordered_map<string, int> labels, int &pc, int &dest) {
     dest = pc + 1;
     pc = labels[label];
@@ -69,7 +138,7 @@ void get_instructions(vector<pair<string, string>> &instructions) {
 
 string get_format(string operation) {
     if (operation == "add" || operation == "sub" || operation == "and" || operation == "or" || operation == "xor") return "r";
-    else if (operation == "addi" || operation == "subi" || operation == "andi" || operation == "ori" || operation == "xori" || operation == "lw") return "i";
+    else if (operation == "addi" || operation == "subi" || operation == "andi" || operation == "ori" || operation == "xori" || operation == "lw" || operation == "lhu" || operation == "lh" || operation == "lbu" || operation == "lb") return "i";
     else return "u";
 }
 
@@ -111,8 +180,29 @@ void perform_instruction(pair<string, string> instruction, vector<int> &reg, vec
         else if (instruction.first == "subi") {
             subi(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
         }
+        else if (instruction.first == "andi") {
+            andi(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
+        }
+        else if (instruction.first == "ori") {
+            ori(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
+        }
+        else if (instruction.first == "xori") {
+            xori(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
+        }
         else if (instruction.first == "lw") {
             lw(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
+        }
+        else if (instruction.first == "lhu") {
+            lhu(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
+        }
+        else if (instruction.first == "lh") {
+            lh(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
+        }
+        else if (instruction.first == "lbu") {
+            lbu(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
+        }
+          else if (instruction.first == "lb") {
+            lb(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
         }
     }
     else if (format == "u") {
