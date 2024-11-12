@@ -4,223 +4,233 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <cctype>
 using namespace std;
 
-
-void and_op(int &dest, int &s1, int &s2) {
-    dest = s1 & s2;
-}
-
-void or_op(int &dest, int &s1, int &s2) {
-    dest = s1 | s2;
-}
-
-void xor_op(int &dest, int &s1, int &s2) {
-    dest = s1 ^ s2;
-}
-
-void add(int &dest, int &s1, int &s2) {
+void add(int &dest , int &s1, int &s2){
     dest = s1 + s2;
 }
-
-void addi(int &dest, int &s1, int imm) {
+void addi(int &dest , int &s1, int imm){
     dest = s1 + imm;
 }
-
-void sub(int &dest, int &s1, int &s2) {
+void sub(int &dest , int &s1, int &s2){
     dest = s1 - s2;
 }
 
-void subi(int &dest, int &s1, int imm) {
+void subi(int &dest , int &s1, int imm){
     dest = s1 - imm;
 }
-
-void lui(int &dest, int imm) {
-    dest = unsigned(imm << 12);
+void lui(int& dest , int imm){
+    dest = imm << 12;
 }
-
-void lw(int &dest, int &base, int offset, vector<int> &mem) {
-    int address = base + offset;
-    if (address >= 0 && address < mem.size()) {
-        dest = mem[address];
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
-void lhu(int &dest, int &base, int offset, vector<int> &mem) {
-    int address = base + offset;
-    int mem_index = address / 2;         
-    int h_offset = address % 2;   
-
-    if (mem_index >= 0 && mem_index < mem.size()) {
-        int h = mem[mem_index];
-        if (h_offset == 0) {
-            dest = h & 0xFFFF;     
-        } else {
-            dest = (h >> 16) & 0xFFFF; 
-        }
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
-void lh(int &dest, int &base, int offset, vector<int> &mem) {
-    int address = base + offset;
-    int mem_index = address / 2;        
-    int h_offset = address % 2;  
-
-    if (mem_index >= 0 && mem_index < mem.size()) {
-        int word = mem[mem_index];
-        int halfword;
-
-        if (h_offset == 0) {
-            halfword = word & 0xFFFF;  
-        } else {
-            halfword = (word >> 16) & 0xFFFF; 
-        }
-        if (halfword & 0x8000) {  
-            halfword |= 0xFFFF0000;  
-        }
-
-        dest = halfword;
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
-void lbu(int &dest, int &base, int offset, vector<int> &mem) {
-    int address = base + offset;
-    int mem_index = address / 4;        
-    int b_offset = address % 4;       
-    if (mem_index >= 0 && mem_index < mem.size()) {
-        int b = mem[mem_index];
-        dest = (b >> (b_offset * 8)) & 0xFF; 
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-void lb(int &dest, int &base, int offset, vector<int> &mem) {
-    int address = base + offset;
-    int mem_index = address / 4;         
-    int b_offset = address % 4;     
-    if (mem_index >= 0 && mem_index < mem.size()) {
-        int word = mem[mem_index];
-        int b = (word >> (b_offset * 8)) & 0xFF;
-        if (b & 0x80) { 
-            b |= 0xFFFFFF00; 
-        }
-
-        dest = byte;
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
-void jal(string label, unordered_map<string, int> labels, int &pc, int &dest) {
+void jal(string label, unordered_map<string,int> labels , int& pc, int& dest){
     dest = pc + 1;
     pc = labels[label];
 }
+void jalr(int& dest , int imm , int& src, int& pc){
+    dest = pc;
+    pc = src + imm -1;
+}
+void beq(string label, unordered_map<string,int> labels, int&pc, int& source1, int& source2){
+    if(source1 == source2) pc = labels[label];
+}
+void bne(string label, unordered_map<string,int> labels, int&pc, int& source1, int& source2){
 
-void get_instructions(vector<pair<string, string>> &instructions) {
+    if(source1 != source2) pc = labels[label];
+}
+void blt(string label, unordered_map<string,int> labels, int&pc, int& source1, int& source2){
+    if(source1 < source2) pc = labels[label];
+}
+void bge(string label, unordered_map<string,int> labels, int&pc, int& source1, int& source2){
+    if(source1 >= source2) pc = labels[label];
+}
+void bltu(string label, unordered_map<string,int> labels, int&pc, int& source1, int& source2){
+    if(unsigned(source1) < unsigned(source2)) pc = labels[label];
+}
+void bgeu(string label, unordered_map<string,int> labels, int&pc, int& source1, int& source2){
+    if(unsigned(source1) >= unsigned(source2)) pc = labels[label];
+}
+void slt(int &dest , int &s1, int &s2){
+    dest = s1 < s2;
+}
+void sltu(int &dest , int &s1, int &s2){
+    dest = unsigned(s1) < unsigned(s2);
+}
+void slti(int &dest , int &s1, int imm){
+    dest = s1 < imm;
+}
+void sltiu(int &dest , int &s1, int imm){
+    dest = unsigned(s1) < unsigned(imm);
+}
+void get_instructions(vector<pair<string,string>> &instructions){
     ifstream program("program.txt");
     string curr_line;
-    while (!program.eof()) {
-        getline(program, curr_line);
+    while(!program.eof()){
+        getline(program,curr_line);
+        transform(curr_line.begin(), curr_line.end(), curr_line.begin(), ::tolower); 
         if (curr_line.empty() || curr_line[0] == '#') continue;
         stringstream str(curr_line);
-        pair<string, string> line;
-        getline(str, line.first, ' ');
-        getline(str, line.second);
+        pair<string,string> line;
+        getline(str, line.first,' ');
+        getline(str , line.second);
         instructions.push_back(line);
     }
 }
+string get_format(string operation){
+    unordered_map<string,string> instruction_map;
+    instruction_map["add"] = "R";
+    instruction_map["sub"] = "R";
+    instruction_map["and"] = "R";
+    instruction_map["or"] = "R";
+    instruction_map["xor"] = "R";
+    instruction_map["sll"] = "R";
+    instruction_map["srl"] = "R";
+    instruction_map["slt"] = "R";
+    instruction_map["sltu"] = "R";
+    instruction_map["sra"] = "R";
+    instruction_map["mul"] = "R";
+    instruction_map["div"] = "R";
+    instruction_map["rem"] = "R";
 
-string get_format(string operation) {
-    if (operation == "add" || operation == "sub" || operation == "and" || operation == "or" || operation == "xor") return "r";
-    else if (operation == "addi" || operation == "subi" || operation == "andi" || operation == "ori" || operation == "xori" || operation == "lw" || operation == "lhu" || operation == "lh" || operation == "lbu" || operation == "lb") return "i";
-    else return "u";
+    instruction_map["addi"] = "I";
+    instruction_map["subi"] = "I";
+    instruction_map["lw"] = "I";
+    instruction_map["sw"] = "I";
+    instruction_map["beq"] = "I";
+    instruction_map["bne"] = "I";
+    instruction_map["blt"] = "I";
+    instruction_map["bge"] = "I";
+    instruction_map["bltu"] = "I";
+    instruction_map["bgeu"] = "I";
+    instruction_map["jalr"] = "I";
+    instruction_map["lbu"] = "I";
+    instruction_map["lhu"] = "I";
+    instruction_map["slti"] = "I";
+    instruction_map["sltiu"] = "I";
+
+    instruction_map["jal"] = "U";
+    instruction_map["lui"] = "U";
+    return instruction_map[operation];
 }
-
-void perform_instruction(pair<string, string> instruction, vector<int> &reg, vector<int> &mem, unordered_map<string, int> &regtoindex, unordered_map<string, int> labels, int &pc) {
+void perform_instruction(pair<string,string> instruction , vector<int> &reg , vector<int>& mem, unordered_map<string, int> &regtoindex, unordered_map<string,int> labels, int& pc){
     string format = get_format(instruction.first);
     string dest;
     string source1;
+    string source2;
     string imm;
     stringstream str(instruction.second);
-    if (format == "r") {
-        string source2;
-        getline(str, dest, ',');
-        getline(str, source1, ',');
-        getline(str, source2);
-        if (instruction.first == "add") {
-            add(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]);
+    if(format == "R"){
+        getline(str,dest,',');
+        getline(str ,source1, ',');
+        getline(str,source2);
+        if(instruction.first == "add"){
+            add(reg[regtoindex[dest]],reg[regtoindex[source1]],reg[regtoindex[source2]]);
         }
-        else if (instruction.first == "sub") {
-            sub(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]);
+        else if(instruction.first == "slt"){
+            getline(str,dest,',');
+            getline(str,source1,',');
+            getline(str,source2);
+            slt(reg[regtoindex[dest]],reg[regtoindex[source1]],reg[regtoindex[source2]]);
         }
-        else if (instruction.first == "and") {
-            and_op(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]);
+        else if(instruction.first == "sltu"){
+            getline(str,dest,',');
+            getline(str,source1,',');
+            getline(str,source2);
+            sltu(reg[regtoindex[dest]],reg[regtoindex[source1]],reg[regtoindex[source2]]);
         }
-        else if (instruction.first == "or") {
-            or_op(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]);
-        }
-        else if (instruction.first == "xor") {
-            xor_op(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]);
+        else{
+            sub(reg[regtoindex[dest]],reg[regtoindex[source1]],reg[regtoindex[source2]]);
         }
     }
-    else if (format == "i") {
-        getline(str, dest, ',');
-        getline(str, source1, ',');
+
+    else if(format == "I"){
+        if(instruction.first == "addi"){ 
+            getline(str,dest,',');
+            getline(str,source1,',');
+            getline(str,imm);
+            addi(reg[regtoindex[dest]], reg[regtoindex[source1]], stoi(imm));
+        }
+        else if(instruction.first == "subi"){
+            getline(str,dest,',');
+            getline(str,source1,',');
+            getline(str,imm);
+            subi(reg[regtoindex[dest]], reg[regtoindex[source1]], stoi(imm));
+        }
+        else if(instruction.first == "beq"){
+            getline(str,source1,',');
+            getline(str,source2,',');
+            getline(str,imm);
+            beq(imm,labels,pc,reg[regtoindex[source1]],reg[regtoindex[source2]]);
+        }
+        else if(instruction.first == "bne"){
+            
+            getline(str,source1,',');
+            getline(str,source2,',');
+            getline(str,imm);
+            bne(imm,labels,pc,reg[regtoindex[source1]],reg[regtoindex[source2]]);
+        }
+        else if(instruction.first == "blt"){
+            getline(str,source1,',');
+            getline(str,source2,',');
+            getline(str,imm);
+            blt(imm,labels,pc,reg[regtoindex[source1]],reg[regtoindex[source2]]);
+        }
+         else if(instruction.first == "bge"){
+            getline(str,source1,',');
+            getline(str,source2,',');
+            getline(str,imm);
+            bge(imm,labels,pc,reg[regtoindex[source1]],reg[regtoindex[source2]]);
+        }
+        else if(instruction.first == "bltu"){
+            getline(str,source1,',');
+            getline(str,source2,',');
+            getline(str,imm);
+            bltu(imm,labels,pc,reg[regtoindex[source1]],reg[regtoindex[source2]]);
+        }
+        else if(instruction.first == "bgeu"){
+            getline(str,source1,',');
+            getline(str,source2,',');
+            getline(str,imm);
+            bgeu(imm,labels,pc,reg[regtoindex[source1]],reg[regtoindex[source2]]);
+        }
+       else if(instruction.first == "slti"){
+            getline(str,dest,',');
+            getline(str,source1,',');
+            getline(str,imm);
+            slti(reg[regtoindex[dest]], reg[regtoindex[source1]], stoi(imm));
+        }
+        else if(instruction.first == "sltiu"){
+            getline(str,dest,',');
+            getline(str,source1,',');
+            getline(str,imm);
+            sltiu(reg[regtoindex[dest]], reg[regtoindex[source1]], stoi(imm));
+        }
+        
+        
+        else{
+            getline(str, dest, ',');
+            getline(str,imm,'(');
+            getline(str,source1,')');
+            jalr(reg[regtoindex[dest]], stoi(imm)/4, reg[regtoindex[source1]] , pc);
+        
+        }
+    }
+    else if(format == "U"){
+        getline(str, dest , ',');
         getline(str, imm);
-        int offset = stoi(imm);
-        if (instruction.first == "addi") {
-            addi(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
-        }
-        else if (instruction.first == "subi") {
-            subi(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
-        }
-        else if (instruction.first == "andi") {
-            andi(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
-        }
-        else if (instruction.first == "ori") {
-            ori(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
-        }
-        else if (instruction.first == "xori") {
-            xori(reg[regtoindex[dest]], reg[regtoindex[source1]], offset);
-        }
-        else if (instruction.first == "lw") {
-            lw(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
-        }
-        else if (instruction.first == "lhu") {
-            lhu(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
-        }
-        else if (instruction.first == "lh") {
-            lh(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
-        }
-        else if (instruction.first == "lbu") {
-            lbu(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
-        }
-          else if (instruction.first == "lb") {
-            lb(reg[regtoindex[dest]], reg[regtoindex[source1]], offset, mem);
+        if(instruction.first == "lui") lui(reg[regtoindex[dest]], stoi(imm));
+        else if(instruction.first == "jal") {
+        jal(imm,labels,pc, reg[regtoindex[dest]]);
+
         }
     }
-    else if (format == "u") {
-        getline(str, dest, ',');
-        getline(str, imm);
-        if (instruction.first == "lui") {
-            lui(reg[regtoindex[dest]], stoi(imm));
-        }
-        else if (instruction.first == "jal") {
-            jal(imm, labels, pc, reg[regtoindex[dest]]);
-        }
-    }
+
+    if(dest == "x0") reg[0] = 0;
 }
 
-
-void map_reg(unordered_map<string, int> &regtoindex, vector<string> reg_name) {
-    for (int i = 0; i < 32; i++) {
-        regtoindex[reg_name[i]] = i;
+void map_reg(unordered_map<string,int>& regtoindex , vector<string> reg_name){
+    for(int i = 0 ; i < 32 ; i++){
+       regtoindex[reg_name[i]] = i;
     }
     regtoindex["zero"] = 0;
     regtoindex["ra"] = 1;
@@ -254,43 +264,42 @@ void map_reg(unordered_map<string, int> &regtoindex, vector<string> reg_name) {
     regtoindex["t4"] = 29;
     regtoindex["t5"] = 30;
     regtoindex["t6"] = 31;
+    
 }
-
-void assembler(vector<int> &reg, vector<int> &mem, vector<pair<string, string>> &instructions, vector<string> &reg_name) {
+void assembeler(vector<int>& reg , vector<int>& mem , vector<pair<string,string>> &instructions, vector<string>& reg_name){
     unordered_map<string, int> regtoindex;
-    unordered_map<string, int> labels;
-    int pc = 0;
-    map_reg(regtoindex, reg_name);
+    unordered_map<string,int> labels;
+    int pc  = 0;
+    map_reg(regtoindex,reg_name);
     get_instructions(instructions);
-    for (int i = 0; i < instructions.size(); i++) {
+    for(int i = 0 ; i < instructions.size() ; i++){
         string label = instructions[i].first;
         if (label.back() == ':') {
             labels[label.substr(0, label.size() - 1)] = i;
         }
     }
-
-    while (pc < instructions.size()) {
+    
+    while(pc < instructions.size()){
         pair<string, string> instruction = instructions[pc];
+        if(instruction.first == "ebreak") return;
         perform_instruction(instruction, reg, mem, regtoindex, labels, pc);
-        pc++;
+        pc++; 
     }
+
 }
-
-
-void print_reg(vector<int> reg, vector<string> reg_name) {
-    for (int i = 0; i < 32; i++) {
+void  print_reg(vector<int> reg , vector<string> reg_name){
+    for(int i = 0 ; i < 32 ; i++){
         cout << reg_name[i] << " : " << reg[i] << "\n";
     }
 }
-
-int main() {
+int main(){
     vector<int> reg(32);
     vector<string> reg_name(32);
-    for (int i = 0; i < 32; i++) {
+    for(int i = 0 ; i < 32 ;i++){
         reg_name[i] = "x" + to_string(i);
     }
-    vector<int> mem(1024);  
-    vector<pair<string, string>> instructions;
-    assembler(reg, mem, instructions, reg_name);
-    print_reg(reg, reg_name);
+    vector<int> mem(1024);
+    vector<pair<string,string>> instructions;
+    assembeler(reg,mem,instructions,reg_name);
+    print_reg(reg,reg_name);
 }
