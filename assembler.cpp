@@ -11,8 +11,7 @@
 #include <set>
 using namespace std;
 
-// We no longer need MEMORY_START_ADDRESS as we handle addresses directly
-// const int MEMORY_START_ADDRESS = 100;
+
 
 void and_op(int &dest, int &s1, int &s2) {
     dest = s1 & s2;
@@ -515,10 +514,10 @@ void print_mem(const unordered_map<uint32_t, uint8_t> &mem) {
              << "Binary: " << bitset<32>(value)
              << "\n";
 
-        // Advance iterator to the next 4-byte aligned address
+        
         it = addresses.lower_bound(aligned_address + 4);
         if (it == addresses.end()) break;
-        --it; // Adjust for the for-loop increment
+        --it; 
     }
 }
 
