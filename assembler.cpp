@@ -11,8 +11,6 @@
 #include <set>
 using namespace std;
 
-
-
 void and_op(int &dest, int &s1, int &s2) {
     dest = s1 & s2;
 }
@@ -494,30 +492,26 @@ void print_reg(const vector<int>& reg, const vector<string>& reg_name) {
 }
 
 void print_mem(const unordered_map<uint32_t, uint8_t> &mem) {
-    cout << "Memory contents:\n";
-    set<uint32_t> addresses;
+    cout << "Memory items:\n";
+    set<uint32_t> word_addresses;
     for (const auto &pair : mem) {
-        addresses.insert(pair.first);
+        uint32_t aligned_address = pair.first & ~0x3; 
+        word_addresses.insert(aligned_address);
     }
 
-    for (auto it = addresses.begin(); it != addresses.end(); ++it) {
-        uint32_t address = *it;
-        uint32_t aligned_address = address & ~0x3; // Align address to 4-byte boundary
-        uint32_t value = (mem.count(aligned_address) ? mem.at(aligned_address) : 0) |
-                         ((mem.count(aligned_address + 1) ? mem.at(aligned_address + 1) : 0) << 8) |
-                         ((mem.count(aligned_address + 2) ? mem.at(aligned_address + 2) : 0) << 16) |
-                         ((mem.count(aligned_address + 3) ? mem.at(aligned_address + 3) : 0) << 24);
+    for (uint32_t address : word_addresses) {
+        uint32_t value = 0;
+        for (int i = 0; i < 4; ++i) {
+            uint32_t byte_address = address + i;
+            uint8_t byte_value = mem.count(byte_address) ? mem.at(byte_address) : 0;
+            value |= byte_value << (8 * i);
+        }
 
-        cout << "mem[" << aligned_address << "] : "
+        cout << "mem[" << address << "] : "
              << "Decimal: " << value << "     "
              << "Hex: 0x" << hex << uppercase << setw(8) << setfill('0') << value << dec << "     "
              << "Binary: " << bitset<32>(value)
              << "\n";
-
-        
-        it = addresses.lower_bound(aligned_address + 4);
-        if (it == addresses.end()) break;
-        --it; 
     }
 }
 
