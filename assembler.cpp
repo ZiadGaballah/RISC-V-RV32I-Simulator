@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <cctype>
 #include <algorithm>
+#include <iomanip>
+#include <bitset>
 using namespace std;
 const int MEMORY_START_ADDRESS = 100;
 
@@ -244,7 +246,6 @@ string get_format(string operation) {
     instruction_map["ori"] = "I";
     instruction_map["xori"] = "I";
     instruction_map["lw"] = "I";
-    instruction_map["sw"] = "I";
     instruction_map["beq"] = "I";
     instruction_map["bne"] = "I";
     instruction_map["blt"] = "I";
@@ -494,16 +495,26 @@ void assembler(vector<int>& reg, vector<uint8_t>& mem, vector<pair<string, strin
     }
 }
 
-void print_reg(vector<int> reg, vector<string> reg_name) {
+void print_reg(const vector<int>& reg, const vector<string>& reg_name) {
     for (int i = 0; i < 32; i++) {
-        cout << reg_name[i] << " : " << reg[i] << "\n";
+        cout << reg_name[i] << " : "
+             << "Decimal: " << reg[i] << "     "
+             << "Hex:" << hex << uppercase << reg[i] << dec << "     "
+             << "Binary: " << bitset<32>(reg[i])
+             << "\n";
     }
 }
 
-void print_mem(const vector<uint8_t> &mem, int start, int end) {
+
+void print_mem(const vector<uint8_t>& mem, int start, int end) {
     cout << "Memory contents from " << start + MEMORY_START_ADDRESS << " to " << end + MEMORY_START_ADDRESS << ":\n";
+
     for (int i = start; i <= end; i += 4) {
-        printf("mem[0x%03X] = %d\n", i + MEMORY_START_ADDRESS, mem[i]);
+        cout << "mem[0x" << setw(3) << setfill('0') << hex << (i + MEMORY_START_ADDRESS) << "] = "
+             << "Decimal: " << dec << static_cast<int>(mem[i]) << "     "
+             << "Hex:" << hex << static_cast<int>(mem[i]) << "     "
+             << "Binary: " << bitset<8>(mem[i])
+             << "\n";
     }
 }
 
