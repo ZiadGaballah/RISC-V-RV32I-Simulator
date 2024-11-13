@@ -51,7 +51,7 @@ void subi(int &dest , int &s1, int imm){
     dest = s1 - imm;
 }
 void lw(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    int address = base + offset - MEMORY_START_ADDRESS;
     if (address >= 0 && (address + 3) < mem.size()) {
         dest = (mem[address]) | 
                (mem[address + 1] << 8) | 
@@ -63,7 +63,7 @@ void lw(int &dest, int &base, int offset, vector<uint8_t> &mem) {
 }
 
 void lhu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    int address = base + offset - MEMORY_START_ADDRESS;
     if (address >= 0 && (address + 1) < mem.size()) {
         dest = (mem[address]) | 
                (mem[address + 1] << 8);
@@ -73,7 +73,7 @@ void lhu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
 }
 
 void lh(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    int address = base + offset - MEMORY_START_ADDRESS;
     if (address >= 0 && (address + 1) < mem.size()) {
         dest = (mem[address]) | 
                (mem[address + 1] << 8);
@@ -86,7 +86,7 @@ void lh(int &dest, int &base, int offset, vector<uint8_t> &mem) {
 }
 
 void lbu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    int address = base + offset - MEMORY_START_ADDRESS;
     if (address >= 0 && address < mem.size()) {
         dest = mem[address];
     } else {
@@ -95,7 +95,7 @@ void lbu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
 }
 
 void lb(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    int address = base + offset - MEMORY_START_ADDRESS;
     if (address >= 0 && address < mem.size()) {
         dest = mem[address];
         if (dest & 0x80) { 
@@ -184,21 +184,21 @@ void sra(int &dest, int &s1, int &s2){
 void srai(int &dest, int &s1, int imm){
     dest = s1 >> (imm & 0x1F);
 }
-
-void sb(vector<uint8_t> &mem, int &s1, int offset, int &src) {
-    int address = s1 + (offset / 4) - MEMORY_START_ADDRESS;
-    if (address >= 0 && address < mem.size()) {
-        mem[address] = src & 0xFF;
-    }
-}
 void mul(int &dest, int &s1, int &s2){
     dest = s1 * s2;
 }
 void div(int &dest, int &s1, int &s2){
     dest = s1 / s2;
 }
+void sb(vector<uint8_t> &mem, int &s1, int offset, int &src) {
+    int address = s1 + offset - MEMORY_START_ADDRESS;
+    if (address >= 0 && address < mem.size()) {
+        mem[address] = src & 0xFF;
+    }
+}
+
 void sh(vector<uint8_t> &mem, int &s1, int offset, int &src) {
-    int address = s1 + (offset / 4) - MEMORY_START_ADDRESS;
+    int address = s1 + offset - MEMORY_START_ADDRESS;
     if (address >= 0 && address < mem.size()){
         mem[address] = src & 0xFF;
         mem[address + 1] = (src >> 8) & 0xFF;
@@ -206,12 +206,14 @@ void sh(vector<uint8_t> &mem, int &s1, int offset, int &src) {
 }
 
 void sw(vector<uint8_t> &mem, int &s1, int offset, int &src) {
-    int address = s1 + (offset / 4) - MEMORY_START_ADDRESS;
-    if (address >= 0 && address < mem.size()){
+    int address = s1 + offset - MEMORY_START_ADDRESS; 
+    if (address >= 0 && (address + 3) < mem.size()) { 
         mem[address] = src & 0xFF;
         mem[address + 1] = (src >> 8) & 0xFF;
         mem[address + 2] = (src >> 16) & 0xFF;
         mem[address + 3] = (src >> 24) & 0xFF;
+    } else {
+        cerr << "Memory access error at address: " << address << endl;
     }
 }
 
@@ -515,15 +517,24 @@ void print_reg(const vector<int>& reg, const vector<string>& reg_name) {
 }
 
 
-void print_mem(const vector<uint8_t>& mem, int start, int end) {
+void print_mem(const vector<uint8_t> &mem, int start, int end) {
     cout << "Memory contents from " << start + MEMORY_START_ADDRESS << " to " << end + MEMORY_START_ADDRESS << ":\n";
-
     for (int i = start; i <= end; i += 4) {
-        cout << "mem[0x" << setw(3) << setfill('0') << hex << (i + MEMORY_START_ADDRESS) << "] = "
-             << "Decimal: " << dec << static_cast<int>(mem[i]) << "     "
-             << "Hex:" << hex << static_cast<int>(mem[i]) << "     "
-             << "Binary: " << bitset<8>(mem[i])
-             << "\n";
+        if (i + 3 < mem.size()) {
+            int value = (mem[i]) |
+                        (mem[i + 1] << 8) |
+                        (mem[i + 2] << 16) |
+                        (mem[i + 3] << 24);
+
+            cout << "mem[" << setw(3) << i + MEMORY_START_ADDRESS << "] : "
+                 << "Decimal: " << value << "     "
+                 << "Hex: 0x" << hex << uppercase << setw(8) << setfill('0') << value << dec << "     "
+                 << "Binary: " << bitset<32>(value)
+                 << "\n";
+        } else {
+            cerr << "Memory access error at address: " << i + MEMORY_START_ADDRESS << endl;
+            break;
+        }
     }
 }
 
