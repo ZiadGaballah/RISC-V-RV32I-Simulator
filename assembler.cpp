@@ -8,8 +8,11 @@
 #include <algorithm>
 #include <iomanip>
 #include <bitset>
+#include <set>
 using namespace std;
-const int MEMORY_START_ADDRESS = 100;
+
+// We no longer need MEMORY_START_ADDRESS as we handle addresses directly
+// const int MEMORY_START_ADDRESS = 100;
 
 void and_op(int &dest, int &s1, int &s2) {
     dest = s1 & s2;
@@ -50,62 +53,42 @@ void sub(int &dest , int &s1, int &s2){
 void subi(int &dest , int &s1, int imm){
     dest = s1 - imm;
 }
-void lw(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset - MEMORY_START_ADDRESS;
-    if (address >= 0 && (address + 3) < mem.size()) {
-        dest = (mem[address]) | 
-               (mem[address + 1] << 8) | 
-               (mem[address + 2] << 16) | 
-               (mem[address + 3] << 24);
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
+
+void lw(int &dest, int &base, int offset, unordered_map<uint32_t, uint8_t> &mem) {
+    uint32_t address = base + offset;
+    dest = (mem.count(address) ? mem[address] : 0) |
+           ((mem.count(address + 1) ? mem[address + 1] : 0) << 8) |
+           ((mem.count(address + 2) ? mem[address + 2] : 0) << 16) |
+           ((mem.count(address + 3) ? mem[address + 3] : 0) << 24);
+}
+
+void lhu(int &dest, int &base, int offset, unordered_map<uint32_t, uint8_t> &mem) {
+    uint32_t address = base + offset;
+    dest = (mem.count(address) ? mem[address] : 0) |
+           ((mem.count(address + 1) ? mem[address + 1] : 0) << 8);
+}
+
+void lh(int &dest, int &base, int offset, unordered_map<uint32_t, uint8_t> &mem) {
+    uint32_t address = base + offset;
+    dest = (mem.count(address) ? mem[address] : 0) |
+           ((mem.count(address + 1) ? mem[address + 1] : 0) << 8);
+    if (dest & 0x8000) { 
+        dest |= 0xFFFF0000; 
     }
 }
 
-void lhu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset - MEMORY_START_ADDRESS;
-    if (address >= 0 && (address + 1) < mem.size()) {
-        dest = (mem[address]) | 
-               (mem[address + 1] << 8);
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
+void lbu(int &dest, int &base, int offset, unordered_map<uint32_t, uint8_t> &mem) {
+    uint32_t address = base + offset;
+    dest = mem.count(address) ? mem[address] : 0;
 }
 
-void lh(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset - MEMORY_START_ADDRESS;
-    if (address >= 0 && (address + 1) < mem.size()) {
-        dest = (mem[address]) | 
-               (mem[address + 1] << 8);
-        if (dest & 0x8000) { 
-            dest |= 0xFFFF0000; 
-        }
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
+void lb(int &dest, int &base, int offset, unordered_map<uint32_t, uint8_t> &mem) {
+    uint32_t address = base + offset;
+    dest = mem.count(address) ? mem[address] : 0;
+    if (dest & 0x80) { 
+        dest |= 0xFFFFFF00; 
     }
 }
-
-void lbu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset - MEMORY_START_ADDRESS;
-    if (address >= 0 && address < mem.size()) {
-        dest = mem[address];
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
-void lb(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset - MEMORY_START_ADDRESS;
-    if (address >= 0 && address < mem.size()) {
-        dest = mem[address];
-        if (dest & 0x80) { 
-            dest |= 0xFFFFFF00; 
-        }
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
 
 void lui(int& dest , int imm){
     dest = imm << 12;
@@ -184,37 +167,32 @@ void sra(int &dest, int &s1, int &s2){
 void srai(int &dest, int &s1, int imm){
     dest = s1 >> (imm & 0x1F);
 }
+
 void mul(int &dest, int &s1, int &s2){
     dest = s1 * s2;
 }
+
 void div(int &dest, int &s1, int &s2){
     dest = s1 / s2;
 }
-void sb(vector<uint8_t> &mem, int &s1, int offset, int &src) {
-    int address = s1 + offset - MEMORY_START_ADDRESS;
-    if (address >= 0 && address < mem.size()) {
-        mem[address] = src & 0xFF;
-    }
+
+void sb(unordered_map<uint32_t, uint8_t> &mem, int &s1, int offset, int &src) {
+    uint32_t address = s1 + offset;
+    mem[address] = src & 0xFF;
 }
 
-void sh(vector<uint8_t> &mem, int &s1, int offset, int &src) {
-    int address = s1 + offset - MEMORY_START_ADDRESS;
-    if (address >= 0 && address < mem.size()){
-        mem[address] = src & 0xFF;
-        mem[address + 1] = (src >> 8) & 0xFF;
-    }
+void sh(unordered_map<uint32_t, uint8_t> &mem, int &s1, int offset, int &src) {
+    uint32_t address = s1 + offset;
+    mem[address] = src & 0xFF;
+    mem[address + 1] = (src >> 8) & 0xFF;
 }
 
-void sw(vector<uint8_t> &mem, int &s1, int offset, int &src) {
-    int address = s1 + offset - MEMORY_START_ADDRESS; 
-    if (address >= 0 && (address + 3) < mem.size()) { 
-        mem[address] = src & 0xFF;
-        mem[address + 1] = (src >> 8) & 0xFF;
-        mem[address + 2] = (src >> 16) & 0xFF;
-        mem[address + 3] = (src >> 24) & 0xFF;
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
+void sw(unordered_map<uint32_t, uint8_t> &mem, int &s1, int offset, int &src) {
+    uint32_t address = s1 + offset; 
+    mem[address] = src & 0xFF;
+    mem[address + 1] = (src >> 8) & 0xFF;
+    mem[address + 2] = (src >> 16) & 0xFF;
+    mem[address + 3] = (src >> 24) & 0xFF;
 }
 
 void get_instructions(vector<pair<string, string>> &instructions){
@@ -277,7 +255,7 @@ string get_format(string operation) {
     return instruction_map[operation];
 }
 
-void perform_instruction(pair<string, string> instruction, vector<int> &reg, vector<uint8_t>& mem, unordered_map<string, int> &regtoindex, unordered_map<string, int> labels, int& pc) {
+void perform_instruction(pair<string, string> instruction, vector<int> &reg, unordered_map<uint32_t, uint8_t>& mem, unordered_map<string, int> &regtoindex, unordered_map<string, int> labels, int& pc) {
     string format = get_format(instruction.first);
     string dest;
     string source1;
@@ -485,7 +463,7 @@ void map_reg(unordered_map<string, int>& regtoindex, vector<string> reg_name) {
     regtoindex["t6"] = 31;
 }
 
-void assembler(vector<int>& reg, vector<uint8_t>& mem, vector<pair<string, string>> &instructions, vector<string>& reg_name) {
+void assembler(vector<int>& reg, unordered_map<uint32_t, uint8_t>& mem, vector<pair<string, string>> &instructions, vector<string>& reg_name) {
     unordered_map<string, int> regtoindex;
     unordered_map<string, int> labels;
     int pc = 0;
@@ -516,25 +494,31 @@ void print_reg(const vector<int>& reg, const vector<string>& reg_name) {
     }
 }
 
+void print_mem(const unordered_map<uint32_t, uint8_t> &mem) {
+    cout << "Memory contents:\n";
+    set<uint32_t> addresses;
+    for (const auto &pair : mem) {
+        addresses.insert(pair.first);
+    }
 
-void print_mem(const vector<uint8_t> &mem, int start, int end) {
-    cout << "Memory contents from " << start + MEMORY_START_ADDRESS << " to " << end + MEMORY_START_ADDRESS << ":\n";
-    for (int i = start; i <= end; i += 4) {
-        if (i + 3 < mem.size()) {
-            int value = (mem[i]) |
-                        (mem[i + 1] << 8) |
-                        (mem[i + 2] << 16) |
-                        (mem[i + 3] << 24);
+    for (auto it = addresses.begin(); it != addresses.end(); ++it) {
+        uint32_t address = *it;
+        uint32_t aligned_address = address & ~0x3; // Align address to 4-byte boundary
+        uint32_t value = (mem.count(aligned_address) ? mem.at(aligned_address) : 0) |
+                         ((mem.count(aligned_address + 1) ? mem.at(aligned_address + 1) : 0) << 8) |
+                         ((mem.count(aligned_address + 2) ? mem.at(aligned_address + 2) : 0) << 16) |
+                         ((mem.count(aligned_address + 3) ? mem.at(aligned_address + 3) : 0) << 24);
 
-            cout << "mem[" << setw(3) << i + MEMORY_START_ADDRESS << "] : "
-                 << "Decimal: " << value << "     "
-                 << "Hex: 0x" << hex << uppercase << setw(8) << setfill('0') << value << dec << "     "
-                 << "Binary: " << bitset<32>(value)
-                 << "\n";
-        } else {
-            cerr << "Memory access error at address: " << i + MEMORY_START_ADDRESS << endl;
-            break;
-        }
+        cout << "mem[" << aligned_address << "] : "
+             << "Decimal: " << value << "     "
+             << "Hex: 0x" << hex << uppercase << setw(8) << setfill('0') << value << dec << "     "
+             << "Binary: " << bitset<32>(value)
+             << "\n";
+
+        // Advance iterator to the next 4-byte aligned address
+        it = addresses.lower_bound(aligned_address + 4);
+        if (it == addresses.end()) break;
+        --it; // Adjust for the for-loop increment
     }
 }
 
@@ -544,9 +528,9 @@ int main() {
     for (int i = 0; i < 32; i++) {
         reg_name[i] = "x" + to_string(i);
     }
-    vector<uint8_t> mem(1024);
+    unordered_map<uint32_t, uint8_t> mem;
     vector<pair<string, string>> instructions;
     assembler(reg, mem, instructions, reg_name);
     print_reg(reg, reg_name);
-    print_mem(mem, 0, 256);
+    print_mem(mem);
 }
