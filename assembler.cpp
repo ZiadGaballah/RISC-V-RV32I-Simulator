@@ -191,7 +191,12 @@ void sb(vector<uint8_t> &mem, int &s1, int offset, int &src) {
         mem[address] = src & 0xFF;
     }
 }
-
+void mul(int &dest, int &s1, int &s2){
+    dest = s1 * s2;
+}
+void div(int &dest, int &s1, int &s2){
+    dest = s1 / s2;
+}
 void sh(vector<uint8_t> &mem, int &s1, int offset, int &src) {
     int address = s1 + (offset / 4) - MEMORY_START_ADDRESS;
     if (address >= 0 && address < mem.size()){
@@ -301,6 +306,10 @@ void perform_instruction(pair<string, string> instruction, vector<int> &reg, vec
             srl(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]);
         } else if (instruction.first == "sra") {
             sra(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]);
+        }else if(instruction.first == "mul"){
+            mul(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]);
+        }else if(instruction.first == "div"){    
+            div(reg[regtoindex[dest]], reg[regtoindex[source1]], reg[regtoindex[source2]]); 
         }
     } else if (format == "I") {
         if (instruction.first == "addi") { 
