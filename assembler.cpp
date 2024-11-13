@@ -48,9 +48,43 @@ void sub(int &dest , int &s1, int &s2){
 void subi(int &dest , int &s1, int imm){
     dest = s1 - imm;
 }
-
 void lw(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset;
+    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    if (address >= 0 && (address + 3) < mem.size()) {
+        dest = (mem[address]) | 
+               (mem[address + 1] << 8) | 
+               (mem[address + 2] << 16) | 
+               (mem[address + 3] << 24);
+    } else {
+        cerr << "Memory access error at address: " << address << endl;
+    }
+}
+
+void lhu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
+    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    if (address >= 0 && (address + 1) < mem.size()) {
+        dest = (mem[address]) | 
+               (mem[address + 1] << 8);
+    } else {
+        cerr << "Memory access error at address: " << address << endl;
+    }
+}
+
+void lh(int &dest, int &base, int offset, vector<uint8_t> &mem) {
+    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    if (address >= 0 && (address + 1) < mem.size()) {
+        dest = (mem[address]) | 
+               (mem[address + 1] << 8);
+        if (dest & 0x8000) { 
+            dest |= 0xFFFF0000; 
+        }
+    } else {
+        cerr << "Memory access error at address: " << address << endl;
+    }
+}
+
+void lbu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
+    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
     if (address >= 0 && address < mem.size()) {
         dest = mem[address];
     } else {
@@ -58,74 +92,18 @@ void lw(int &dest, int &base, int offset, vector<uint8_t> &mem) {
     }
 }
 
-void lhu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset;
-    int mem_index = address / 2;         
-    int h_offset = address % 2;   
-
-    if (mem_index >= 0 && mem_index < mem.size()) {
-        int h = mem[mem_index];
-        if (h_offset == 0) {
-            dest = h & 0xFFFF;     
-        } else {
-            dest = (h >> 16) & 0xFFFF; 
-        }
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
-void lh(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset;
-    int mem_index = address / 2;        
-    int h_offset = address % 2;  
-
-    if (mem_index >= 0 && mem_index < mem.size()) {
-        int word = mem[mem_index];
-        int halfword;
-
-        if (h_offset == 0) {
-            halfword = word & 0xFFFF;  
-        } else {
-            halfword = (word >> 16) & 0xFFFF; 
-        }
-        if (halfword & 0x8000) {  
-            halfword |= 0xFFFF0000;  
-        }
-
-        dest = halfword;
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
-void lbu(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset;
-    int mem_index = address / 4;        
-    int b_offset = address % 4;       
-    if (mem_index >= 0 && mem_index < mem.size()) {
-        int b = mem[mem_index];
-        dest = (b >> (b_offset * 8)) & 0xFF; 
-    } else {
-        cerr << "Memory access error at address: " << address << endl;
-    }
-}
-
 void lb(int &dest, int &base, int offset, vector<uint8_t> &mem) {
-    int address = base + offset;
-    int mem_index = address / 4;         
-    int b_offset = address % 4;     
-    if (mem_index >= 0 && mem_index < mem.size()) {
-        int word = mem[mem_index];
-        int b = (word >> (b_offset * 8)) & 0xFF;
-        if (b & 0x80) { 
-            b |= 0xFFFFFF00; 
+    int address = base + (offset / 4) - MEMORY_START_ADDRESS;
+    if (address >= 0 && address < mem.size()) {
+        dest = mem[address];
+        if (dest & 0x80) { 
+            dest |= 0xFFFFFF00; 
         }
-        dest = b;
     } else {
         cerr << "Memory access error at address: " << address << endl;
     }
 }
+
 
 void lui(int& dest , int imm){
     dest = imm << 12;
@@ -260,7 +238,6 @@ string get_format(string operation) {
     instruction_map["mul"] = "R";
     instruction_map["div"] = "R";
     instruction_map["rem"] = "R";
-
     instruction_map["addi"] = "I";
     instruction_map["subi"] = "I";
     instruction_map["andi"] = "I";
