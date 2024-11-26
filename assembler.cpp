@@ -98,7 +98,7 @@ void jal(string label, unordered_map<string,int> labels , int& pc, int& dest){
 
 void jalr(int& dest , int imm , int& src, int& pc){
     dest = pc;
-    pc = src + imm - 1;
+    pc = src + imm;
 }
 
 void beq(string label, unordered_map<string,int> labels, int& pc, int& source1, int& source2){
@@ -193,7 +193,7 @@ void sw(unordered_map<uint32_t, uint8_t> &mem, int &s1, int offset, int &src) {
 }
 
 void get_instructions(vector<pair<string, string>> &instructions){
-    ifstream program("instructions.txt");
+    ifstream program("test3.txt");
     string curr_line;
     while (!program.eof()) {
         getline(program, curr_line);
@@ -294,7 +294,13 @@ void perform_instruction(pair<string, string> instruction, vector<int> &reg, uno
             getline(str, source1, ',');
             getline(str, imm);
             addi(reg[regtoindex[dest]], reg[regtoindex[source1]], stoi(imm));
-        } else if (instruction.first == "subi") {
+        } else if(instruction.first == "jalr"){
+            getline(str, dest, ',');
+            getline(str, imm, '(');
+            getline(str, source1, ')');
+            jalr(reg[regtoindex[dest]], stoi(imm), reg[regtoindex[source1]], pc);
+        }
+        else if (instruction.first == "subi") {
             getline(str, dest, ',');
             getline(str, source1, ',');
             getline(str, imm);
@@ -477,7 +483,7 @@ void assembler(vector<int>& reg, unordered_map<uint32_t, uint8_t>& mem, vector<p
         pair<string, string> instruction = instructions[pc];
         if (instruction.first == "ebreak") return;
         perform_instruction(instruction, reg, mem, regtoindex, labels, pc);
-        pc++;
+        if(instruction.first!= "jalr")pc++;
     }
 }
 
